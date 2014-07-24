@@ -6,10 +6,6 @@ using System.Collections.Generic;
 public class GameSetup : MonoBehaviour {
 
 	public Camera mainCam;
-	public BoxCollider2D topWall;
-	public BoxCollider2D bottomWall;
-	public BoxCollider2D leftWall;
-	public BoxCollider2D rightWall;
 
 	Vector3 temp;
 	
@@ -38,22 +34,11 @@ public class GameSetup : MonoBehaviour {
 		Vector2 newOffset;
 		Vector2 letterOffset;
 
+		UnityEngine.Object brickPrefab = Resources.Load ("fragmentBrick", typeof(GameObject));
+		UnityEngine.Object letterPrefab = Resources.Load ("letter", typeof(GameObject));
+
 
 		fragmentBricks = new GameObject[fragments.Length];
-
-		//Initialize City Grounds and Construction Zone boundaries.
-		//Move each wall to its edge location
-		topWall.size = new Vector2 (mainCam.ScreenToWorldPoint(new Vector3(Screen.width * 2f, 0f, 0f)).x, 1f);
-		topWall.center = new Vector2 (0f, mainCam.ScreenToWorldPoint(new Vector3(0f, Screen.height, 0f)).y + 0.5f);
-		
-		bottomWall.size = new Vector2 (mainCam.ScreenToWorldPoint (new Vector3 (Screen.width * 2, 0f, 0f)).x, 1f);
-		bottomWall.center = new Vector2 (0f, mainCam.ScreenToWorldPoint (new Vector3( 0f, 0f, 0f)).y - 0.5f);
-		
-		leftWall.size = new Vector2(1f, mainCam.ScreenToWorldPoint(new Vector3(0f, Screen.height*2f, 0f)).y);;
-		leftWall.center = new Vector2(mainCam.ScreenToWorldPoint(new Vector3(0f, 0f, 0f)).x - 0.5f, 0f);
-		
-		rightWall.size = new Vector2(1f, mainCam.ScreenToWorldPoint(new Vector3(0f, Screen.height*2f, 0f)).y);
-		rightWall.center = new Vector2(mainCam.ScreenToWorldPoint(new Vector3(Screen.width, 0f, 0f)).x + 0.5f, 0f);
 
 		//Initialize Menu Bar.
 
@@ -62,7 +47,7 @@ public class GameSetup : MonoBehaviour {
 			Destroy(fragmentBricks[i]);
 
 			//Draw new ones
-			fragmentBricks[i] = Instantiate(Resources.Load("fragmentBrick", typeof(GameObject))) as GameObject;
+			fragmentBricks[i] = Instantiate(brickPrefab) as GameObject;
 			fragmentBricks[i].transform.parent = fragmentBrickParent.transform;
 			fragmentBricks[i].name = fragments[i];
 			fragmentBricks[i].guiText.text = fragments[i];
@@ -103,16 +88,14 @@ public class GameSetup : MonoBehaviour {
 			//ERROR: lol this is pretty horrible but dont look at it
 			for(int j = 0; j < fragments[i].Length; j++){
 				//Create GUIText object.
-				charArr[j] = new GameObject();
+				charArr[j] = Instantiate(letterPrefab) as GameObject;
 				charArr[j].name = fragments[i].Substring(j, 1);
-				charArr[j].AddComponent<GUITexture>();
-				charArr[j].guiTexture.texture = brickTexture;
 
 				//Put it under the GameObject parent.
 				charArr[j].transform.parent = fragmentBricks[i].transform;
 				charArr[j].transform.position = fragmentBricks[i].transform.position;
 
-				charArr[j].AddComponent<GUIText>();
+				//charArr[j].AddComponent<GUIText>();
 				charArr[j].guiText.text = fragments[i].Substring(j, 1);
 				charArr[j].guiText.fontSize = 50;
 				charArr[j].guiText.anchor = TextAnchor.LowerLeft;
@@ -121,12 +104,22 @@ public class GameSetup : MonoBehaviour {
 				//Fix the position.
 				Debug.Log("Width of "+fragments[i].Substring(j, 1)+": "+charArr[j].guiText.GetScreenRect().width);
 				charArr[j].guiText.pixelOffset = letterOffset;
+
+				//Fix texture size.
+				float letterDimensions = charArr[j].guiText.GetScreenRect().width;
+				float letterDesiredScale = (float)letterDimensions/Screen.width;
+
+				Rect tempPixelInset = charArr[j].transform.guiTexture.pixelInset;
+				tempPixelInset.height = 64;
+				tempPixelInset.width = charArr[j].guiText.GetScreenRect().width;
+				tempPixelInset.x = letterOffset.x;
+				tempPixelInset.y = letterOffset.y;
+				charArr[j].transform.guiTexture.pixelInset = tempPixelInset;
+
 				if(charArr[j].guiText.text == " ") letterOffset.x += 20;
 				else letterOffset.x += charArr[j].guiText.GetScreenRect().width;
 
-				//Fix texture size.
-				//charArr[j].guiTexture.texture.height = (int)charArr[j].guiText.GetScreenRect().height;
-				//charArr[j].guiTexture.texture.width = (int)charArr[j].guiText.GetScreenRect().width;
+				charArr[j].guiText.text = fragments[i].Substring(j, 1); //????
 
 				//Put the letter in front of the brick.
 				charArr[j].layer = LayerMask.NameToLayer("Letters");
@@ -141,10 +134,13 @@ public class GameSetup : MonoBehaviour {
 				charArr[j].transform.localPosition = newPos;
 
 				//Add box collider.
+				/*
 				BoxCollider2D box = charArr[j].AddComponent<BoxCollider2D>();
 				box.size = new Vector2(charArr[j].guiText.GetScreenRect().width, charArr[j].guiText.GetScreenRect().height);
 				//attach a script for the collider.
 				charArr[j].AddComponent("DetectOverlap");
+				*/
+
 			}
 			//Delete the original GUIText.
 			Destroy(fragmentBricks[i].guiText);
