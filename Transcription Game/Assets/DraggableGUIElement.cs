@@ -44,8 +44,8 @@ public class DraggableGUIElement : MonoBehaviour
 		Vector3 pos = transform.position;
 
 		Collider2D collider2D= gameObject.GetComponent<Collider2D>();
-		float width = collider2D.bounds.size.x;
-		float height = collider2D.bounds.size.y;
+		//float width = collider2D.bounds.size.x;
+		//float height = collider2D.bounds.size.y;
 
 		//Debug.Log ("width: "+width+"\nheight: "+height);
 
