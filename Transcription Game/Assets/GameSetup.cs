@@ -5,6 +5,8 @@ using System.Collections.Generic;
 
 public class GameSetup : MonoBehaviour {
 
+	public enum BrickState {IN, OUT};
+
 	public Camera mainCam;
 	public BoxCollider2D topWall;
 	public BoxCollider2D bottomWall;
@@ -16,13 +18,21 @@ public class GameSetup : MonoBehaviour {
 	string[] fragments = {"This is", "this is a", "is a sample", "sample."};
 	public GameObject[] fragmentBricks = new GameObject[4];
 
+	//NOTE: clear this out when reinitializing the bricks!
+	public Hashtable brickSizes = new Hashtable();
+
 	public float timer = 120f;
 
 	Texture2D brickTexture;
 
 	public GameObject movedBrick = null;
+	public BrickState brickstate = BrickState.OUT;
+	public List<GameObject> brickList = new List<GameObject>();
 
 	void makeBricks() {
+		//Clear brickSizes.
+		brickSizes = new Hashtable();
+
 		//DEBUG: Initialize our sample brick set.
 		//Find the GameObject to contain all the bricks in.
 		GameObject fragmentBrickParent = GameObject.Find("fragmentBricks");
@@ -71,6 +81,8 @@ public class GameSetup : MonoBehaviour {
 
 			//Scale the brick to fit the text exactly.
 			textDimensions = fragmentBricks[i].guiText.GetScreenRect().width;
+			//Save the brick size for later use.
+			brickSizes.Add(fragmentBricks[i], textDimensions);
 			desiredScale = (float)textDimensions/Screen.width;
 			fragmentBricks[i].transform.localScale = new Vector3(desiredScale-.12f, 0f, 0f);
 
@@ -204,6 +216,7 @@ public class GameSetup : MonoBehaviour {
 		}
 	}
 
+	//This is called when a brick has moved in or out of the construction zone.
 	void FindOverlap(){
 
 	}
@@ -222,6 +235,8 @@ public class GameSetup : MonoBehaviour {
 
 		if (movedBrick != null) {
 			Debug.Log(movedBrick);
+			Debug.Log (brickstate);
+			FindOverlap();
 			movedBrick = null;
 		}
 

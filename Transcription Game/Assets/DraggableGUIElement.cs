@@ -13,7 +13,7 @@ public class DraggableGUIElement : MonoBehaviour
 	
 	Vector3 lastMousePosition;
 
-	public GameSetup gamesetup = GameObject.Find("_GM").GetComponent<GameSetup>();
+	public GameSetup gamesetup;
 
 	void OnMouseDown()
 	{
@@ -78,15 +78,37 @@ public class DraggableGUIElement : MonoBehaviour
 			//This condition is a way to disable snapping when dragging the piece back out.
 			if(lastMousePosition.y > GetClampedMousePosition().y){
 				position.y = 0.2f;
+				gamesetup.brickstate = GameSetup.BrickState.IN;
 			}
 		}
 
-		else position.y = Mathf.Clamp(position.y, border.minY, border.maxY);
+		else {
+			position.y = Mathf.Clamp(position.y, border.minY, border.maxY);
+			gamesetup.brickstate = GameSetup.BrickState.OUT;
+		}
 
 		//Update position again.
 		transform.position = position;
 		
 		lastMousePosition = GetClampedMousePosition();
+	}
+
+	//Checks if the gameObject is in the list.
+	bool isInList(){
+		bool flag = false;
+		for(int i = 0; i < gamesetup.brickList.Count; i++){
+			if (gamesetup.brickList[i].GetInstanceID() == gameObject.GetInstanceID()){
+				flag = true;
+				break;
+			}
+		}
+
+		return flag;
+	}
+
+	//Updates list when brick is moved around.
+	void UpdateList(){
+
 	}
 
 	void OnMouseUp()
@@ -97,14 +119,46 @@ public class DraggableGUIElement : MonoBehaviour
 
 		if(GetClampedMousePosition().y < 300){
 			position.y = 0.2f;
+
+			//Snap the piece to the right x position, too.
+			if(gamesetup.brickList.Count == 0){
+				//If there are no other bricks in the construction zone, snap to the beginning.
+				position.x = 0f;
+			}
+			else{
+				//If there are, check where the brick is currently in relation to the last brick.
+				GameObject last = gamesetup.brickList[gamesetup.brickList.Count - 1];
+				float startPos = last.transform.position.x;
+
+				Vector3 temp = new Vector3((float)gamesetup.brickSizes[last], 0, 0);
+				Vector3 temp2 = new Vector3((float)gamesetup.brickSizes[gameObject], 0, 0);
+				float endPos = startPos + Camera.main.ScreenToViewportPoint(temp).x/2 + Camera.main.ScreenToViewportPoint(temp2).x/2 + .01f;
+
+
+				position.x = endPos;
+			}
+
+			//Add the brick to the list if it isn't already.
+			if(!isInList()){
+				gamesetup.brickList.Add(gameObject);
+			}
+			else Debug.Log ("Already in list!");
+		}
+		else{
+			if(isInList()){
+				gamesetup.brickList.Remove(gameObject);
+				//reset position of all objects after it.
+			}
 		}
 
 		transform.position = position;
 
+		//Tell GM that a brick has moved.
+		gamesetup.movedBrick = gameObject;
 		Debug.Log(lastMousePosition);
 	}
 
 	void Start(){
-		Debug.Log(gamesetup);
+		gamesetup = GameObject.Find("_GM").GetComponent<GameSetup>();
 	}
 }
