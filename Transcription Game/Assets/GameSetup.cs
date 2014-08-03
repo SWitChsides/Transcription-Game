@@ -20,6 +20,8 @@ public class GameSetup : MonoBehaviour {
 
 	Texture2D brickTexture;
 
+	public GameObject movedBrick = null;
+
 	void makeBricks() {
 		//DEBUG: Initialize our sample brick set.
 		//Find the GameObject to contain all the bricks in.
@@ -36,7 +38,7 @@ public class GameSetup : MonoBehaviour {
 		float textDimensions = 0f;
 		float brickSize = 273f;
 		Vector2 newOffset;
-		Vector2 letterOffset;
+		Vector2 wordOffset;
 
 
 		fragmentBricks = new GameObject[fragments.Length];
@@ -95,16 +97,18 @@ public class GameSetup : MonoBehaviour {
 
 
 			//Create an array of GUIText objects.
-			GameObject[] charArr = new GameObject[fragments[i].Length];
+			//note: rename charArr to wordArr
+			string[] wordArray = fragments[i].Split(" ".ToCharArray());
+			GameObject[] charArr = new GameObject[wordArray.Length];
 
-			letterOffset = newOffset;
+			wordOffset = newOffset;
 
-			//Loop through all the letters and readd them to the brick.
+			//Loop through all the words and readd them to the brick.
 			//ERROR: lol this is pretty horrible but dont look at it
-			for(int j = 0; j < fragments[i].Length; j++){
+			for(int j = 0; j < wordArray.Length; j++){
 				//Create GUIText object.
 				charArr[j] = new GameObject();
-				charArr[j].name = fragments[i].Substring(j, 1);
+				charArr[j].name = wordArray[j];
 				charArr[j].AddComponent<GUITexture>();
 				charArr[j].guiTexture.texture = brickTexture;
 
@@ -113,23 +117,20 @@ public class GameSetup : MonoBehaviour {
 				charArr[j].transform.position = fragmentBricks[i].transform.position;
 
 				charArr[j].AddComponent<GUIText>();
-				charArr[j].guiText.text = fragments[i].Substring(j, 1);
+				charArr[j].guiText.text = wordArray[j];
 				charArr[j].guiText.fontSize = 50;
 				charArr[j].guiText.anchor = TextAnchor.LowerLeft;
 				charArr[j].guiText.alignment = TextAlignment.Center;
 
 				//Fix the position.
-				Debug.Log("Width of "+fragments[i].Substring(j, 1)+": "+charArr[j].guiText.GetScreenRect().width);
-				charArr[j].guiText.pixelOffset = letterOffset;
-				if(charArr[j].guiText.text == " ") letterOffset.x += 20;
-				else letterOffset.x += charArr[j].guiText.GetScreenRect().width;
+				Debug.Log("Width of "+wordArray[j]+": "+charArr[j].guiText.GetScreenRect().width);
+				charArr[j].guiText.pixelOffset = wordOffset;
+				//if(charArr[j].guiText.text == " ") wordOffset.x += 20;
+				wordOffset.x += (charArr[j].guiText.GetScreenRect().width+20);
 
 				//Fix texture size.
 				//charArr[j].guiTexture.texture.height = (int)charArr[j].guiText.GetScreenRect().height;
 				//charArr[j].guiTexture.texture.width = (int)charArr[j].guiText.GetScreenRect().width;
-
-				//Put the letter in front of the brick.
-				charArr[j].layer = LayerMask.NameToLayer("Letters");
 
 				Vector3 temp = charArr[j].transform.position;
 				temp.z = 1;
@@ -145,6 +146,9 @@ public class GameSetup : MonoBehaviour {
 				box.size = new Vector2(charArr[j].guiText.GetScreenRect().width, charArr[j].guiText.GetScreenRect().height);
 				//attach a script for the collider.
 				charArr[j].AddComponent("DetectOverlap");
+
+				//Add dragging script.
+				charArr[j].AddComponent("DraggableGUIElementChild");
 			}
 			//Delete the original GUIText.
 			Destroy(fragmentBricks[i].guiText);
@@ -186,14 +190,14 @@ public class GameSetup : MonoBehaviour {
 		}
 	}
 
-	public struct Letter{
-		public GameObject letter;
+	public struct Word{
+		public GameObject word;
 		public int index;
 		public GameObject brick;
 		public int group;
 
-		public Letter(GameObject singleLetter, int i, GameObject assignedBrick){
-			letter = singleLetter;
+		public Word(GameObject singleWord, int i, GameObject assignedBrick){
+			word = singleWord;
 			index = i;
 			brick = assignedBrick;
 			group = 0;
@@ -201,99 +205,7 @@ public class GameSetup : MonoBehaviour {
 	}
 
 	void FindOverlap(){
-		List<Brick> bricks = new List<Brick>();
-		int index = 0;
-		List<Letter> letters = new List<Letter>();
 
-		//Results we want:
-		//list of overlaps
-		//parts of bricks overlapped
-		//locations of overlaps
-
-		//List of List of Objects
-		//MAKE THIS PUBLIC!!!
-		//(first list is overlaps, second list is bricks involved)
-		//Object structure: brick ID, start index, end index
-
-		//Loop through all the bricks to see which are in the construction area.
-		for(int i = 0; i<fragmentBricks.Length; i++){
-			if(fragmentBricks[i].transform.position.y == .2f){
-				int startIndex = index;
-
-				//Add letters to list of letters.
-				foreach(Transform letter in fragmentBricks[i].transform){
-					letters.Add(new Letter(letter.gameObject, index, fragmentBricks[i]));
-					index++;
-				}
-
-				int endIndex = index - 1;
-
-				//Add brick to our list of bricks.
-				bricks.Add(new Brick(fragmentBricks[i], i, startIndex, endIndex));
-				Debug.Log("Added brick: \""+fragmentBricks[i].name+"\"");
-			}
-		}
-		//Order the list by x coordinate.
-		letters.Sort(delegate(Letter a, Letter b){
-			if(a.letter.transform.position.x < b.letter.transform.position.x) return 1;
-			else return 2;
-		});
-
-		/*
-		 * For each brick in the construction area, do the following:
-			Find the first index.
-			Iterate through list of IDs. Once a conflict has been detected, indicate the index where it begins and possibly where it ends.
-			If a conflict already exists, then keep iterating to see if theres a bigger conflict.
-		*/
-
-		int currentGroup = 0;
-		for(int i = 0; i<bricks.Count; i++){
-			Brick brick = bricks[i];
-			int start = brick.startIndex;
-			int end = brick.endIndex;
-			int next = start;
-
-			bool startFound = false;
-
-			//Loop through letter list in order of position.
-			for(int j = 0; j<letters.Count; j++){
-				Letter letter = letters[j];
-
-				//If this letter has been recorded, get the group it's in.
-				if(letter.group != 0){ 
-					currentGroup = letter.group;
-					continue;
-				}
-
-				//Once we find the position of the first letter
-				if(startFound){
-					if(letter.index == end){
-						//Add to the current group.
-
-						//No need to iterate through the remaining letters.
-						break;
-					}
-					else{
-						//Add it to the current group.
-					}
-				}
-
-				//If we have not found the first letter yet
-				else{
-					//Check if this is the first letter.
-					if(next == start){
-						//Record the letter.
-					}
-					//If this letter is not the first letter, then move on to the next one.
-					else continue;
-				}
-			}
-		}
-
-		//WHAT WE WANT IN THE END:
-		//1. list of all overlaps
-		//2. What parts of which bricks have been overlapped <-- do we need this?
-		//3. Where the overlaps are visually.
 	}
 
 	//******************************************************END OVERLAP ALGORITHM
@@ -308,12 +220,21 @@ public class GameSetup : MonoBehaviour {
 		//FindOverlap();
 		timer -= Time.deltaTime;
 
+		if (movedBrick != null) {
+			Debug.Log(movedBrick);
+			movedBrick = null;
+		}
+
 	}
 
 	void OnGUI(){
+		GUIStyle style = new GUIStyle ();
+		style.fontSize = 100;
+		style.alignment = TextAnchor.UpperLeft;
 		TimeSpan time = TimeSpan.FromSeconds(timer);
 		int seconds = time.Seconds;
 		int minutes = time.Minutes;
-		GUI.Label(new Rect(10, 10, Screen.width - 20, 30), minutes.ToString()+":"+seconds.ToString());
+
+		if(seconds >= 0)GUI.Label(new Rect(100, -10, Screen.width, 0), minutes.ToString()+":"+seconds.ToString(), style);
 	}
 }

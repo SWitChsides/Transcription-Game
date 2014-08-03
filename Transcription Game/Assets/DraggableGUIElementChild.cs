@@ -1,27 +1,42 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class DraggableGUIElement : MonoBehaviour
+public class DraggableGUIElementChild : MonoBehaviour
 {
 	[System.Serializable]
 	public class Border
 	{
 		public float minX,maxX,minY,maxY;
+
+		public Border(float x1,float x2,float y1,float y2){
+			minX = x1;
+			maxX = x2;
+			minY = y1;
+			maxY = y2;
+		}
 	}
 	
-	public Border border;
+	Border border = new Border(0f, 1f, 0.12f, 1f);
 	
 	Vector3 lastMousePosition;
 
-	public GameSetup gamesetup = GameObject.Find("_GM").GetComponent<GameSetup>();
+	Transform parent;
 
+	void Start(){
+		parent = transform.parent;
+		border.maxX = 1f;
+		border.minX = 0f;
+		border.minY = 0.12f;
+		border.maxY = 1f;
+	}
+	
 	void OnMouseDown()
 	{
 		lastMousePosition = GetClampedMousePosition();
-
+		
 		GameObject fragmentBrickParent = GameObject.Find("fragmentBricks");
 		GameObject fragmentBrickTopParent = GameObject.Find("fragmentBricks/top");
-
+		
 		/*
 		if(fragmentBrickTopParent.transform.childCount > 0){
 			Transform oldTop = fragmentBrickTopParent.transform.GetChild(0);
@@ -39,40 +54,26 @@ public class DraggableGUIElement : MonoBehaviour
 		
 		return mousePosition;
 	}
-
-	//Detects whether the mouse cursor is actually within the GameObject.
-	//ERROR: collider2D bounds seem to be (0,0), not sure why.
-	bool isInGameObject(){
-		Vector3 pos = transform.position;
-
-		Collider2D collider2D= gameObject.GetComponent<Collider2D>();
-		//float width = collider2D.bounds.size.x;
-		//float height = collider2D.bounds.size.y;
-
-		//Debug.Log ("width: "+width+"\nheight: "+height);
-
-		return true;
-	}
 	
 	void OnMouseDrag()
 	{
 		//Check if cursor is actually on the GameObject. If not, don't do anything.
-		if(!isInGameObject()) return;
-
+		//if(!isInGameObject()) return;
+		
 		//delta gets the change in position.
 		Vector3 delta = GetClampedMousePosition() - lastMousePosition;
 		
 		delta = Camera.main.ScreenToViewportPoint(delta);
-
+		
 		//Update the GameObject's position.
-		transform.position += delta;
-
+		parent.position += delta;
+		
 		//Clamp the position to borders.
-		Vector3 position = transform.position;
+		Vector3 position = parent.position;
 		position.x = Mathf.Clamp(position.x, border.minX, border.maxX);
-
+		
 		//Debug.Log(GetClampedMousePosition().y);
-
+		
 		//Snapping to Construction Area.
 		if(GetClampedMousePosition().y < 300){
 			//This condition is a way to disable snapping when dragging the piece back out.
@@ -80,31 +81,17 @@ public class DraggableGUIElement : MonoBehaviour
 				position.y = 0.2f;
 			}
 		}
-
+		
 		else position.y = Mathf.Clamp(position.y, border.minY, border.maxY);
-
+		
 		//Update position again.
-		transform.position = position;
+		parent.position = position;
 		
 		lastMousePosition = GetClampedMousePosition();
 	}
-
+	
 	void OnMouseUp()
 	{
-		//If the user begins to drag the brick out but doesn't finish the action, snap it back in.
-		Vector3 position = transform.position;
-		position.x = Mathf.Clamp(position.x, border.minX, border.maxX);
-
-		if(GetClampedMousePosition().y < 300){
-			position.y = 0.2f;
-		}
-
-		transform.position = position;
-
 		Debug.Log(lastMousePosition);
-	}
-
-	void Start(){
-		Debug.Log(gamesetup);
 	}
 }
