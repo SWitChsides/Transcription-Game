@@ -132,10 +132,10 @@ public class DraggableGUIElement : MonoBehaviour
 
 				Vector3 temp = new Vector3((float)gamesetup.brickSizes[last], 0, 0);
 				Vector3 temp2 = new Vector3((float)gamesetup.brickSizes[gameObject], 0, 0);
-				float endPos = startPos + Camera.main.ScreenToViewportPoint(temp).x/2 + Camera.main.ScreenToViewportPoint(temp2).x/2 + .01f;
+				float endPos = startPos + Camera.main.ScreenToViewportPoint(temp).x/2 + Camera.main.ScreenToViewportPoint(temp2).x/2 + .011f;
 
-
-				position.x = endPos;
+				if(gameObject.transform.position.x > endPos) position.x = endPos;
+				else if(gameObject.transform.position.x < startPos) position.x = endPos;
 			}
 
 			//Add the brick to the list if it isn't already.
@@ -146,8 +146,24 @@ public class DraggableGUIElement : MonoBehaviour
 		}
 		else{
 			if(isInList()){
+				int index = gamesetup.brickList.IndexOf(gameObject);
 				gamesetup.brickList.Remove(gameObject);
+
+				Vector3 temp = new Vector3((float)gamesetup.brickSizes[gameObject], 0, 0);
+				Vector3 temp2 = new Vector3(0,0,0); 
+				if(index < gamesetup.brickList.Count) {
+					temp2 = new Vector3((float)gamesetup.brickSizes[gamesetup.brickList[index]], 0, 0);
+				}
+
+				Vector3 offset = new Vector3(0,0,0);
+				offset.x = Camera.main.ScreenToViewportPoint(temp).x/2 + Camera.main.ScreenToViewportPoint(temp2).x/2 + .011f;
+
 				//reset position of all objects after it.
+				for(int i = index; i < gamesetup.brickList.Count; i++){
+					Vector3 tempPos = gamesetup.brickList[i].transform.position;
+					tempPos -= offset;
+					gamesetup.brickList[i].transform.position = tempPos;
+				}
 			}
 		}
 

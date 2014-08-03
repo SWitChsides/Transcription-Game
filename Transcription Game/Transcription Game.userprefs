@@ -1,9 +1,9 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets\DraggableGUIElement.cs">
     <Files>
       <File FileName="Assets\GameSetup.cs" Line="10" Column="2" />
-      <File FileName="Assets\DraggableGUIElement.cs" Line="135" Column="126" />
+      <File FileName="Assets\DraggableGUIElement.cs" Line="154" Column="44" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
