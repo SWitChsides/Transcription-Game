@@ -183,17 +183,24 @@ public class GameSetup : MonoBehaviour {
 		public List<string> secondChunk;
 		public float startOverlap;
 		public float endOverlap;
+		public GameObject drawnOverlap;
 
 		public Overlap(List<string> first, List<string> second, float start, float end){
 			firstChunk = first;
 			secondChunk = second;
 			startOverlap = start;
 			endOverlap = end;
+			drawnOverlap = Instantiate(Resources.Load("placeholder", typeof(GameObject))) as GameObject;
+		}
+
+		public void deleteImage(){
+			Destroy (drawnOverlap);
 		}
 	}
 
 	//This is called when a brick has moved in or out of the construction zone.
 	void FindOverlap(){
+		for(int i = 0; i < overlapList.Count; i++) overlapList[i].deleteImage();
 		overlapList = new List<Overlap> ();
 
 		//put words in order
@@ -251,11 +258,12 @@ public class GameSetup : MonoBehaviour {
 				Overlap newOverlap = new Overlap(firstList, secondList, startOverlap, endOverlap);
 
 				overlapList.Add(newOverlap);
+
+				//Draw the overlap
+				Vector3 center = new Vector3((float)(prevBrickEnd + nextBrickStart)/2, -4f, 0f);
+				newOverlap.drawnOverlap.transform.position = center;
 			}
 		}
-
-
-
 	}
 
 	//******************************************************END OVERLAP ALGORITHM
@@ -267,7 +275,6 @@ public class GameSetup : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		//FindOverlap();
 		timer -= Time.deltaTime;
 
 		if (movedBrick != null) {
