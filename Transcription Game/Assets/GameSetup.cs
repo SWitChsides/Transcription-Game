@@ -29,6 +29,8 @@ public class GameSetup : MonoBehaviour {
 	public BrickState brickstate = BrickState.OUT;
 	public List<GameObject> brickList = new List<GameObject>();
 
+	List<Overlap> overlapList = new List<Overlap>();
+
 	void makeBricks() {
 		//Clear brickSizes.
 		brickSizes = new Hashtable();
@@ -177,47 +179,82 @@ public class GameSetup : MonoBehaviour {
 	//**********************************************************OVERLAP ALGORITHM
 
 	public struct Overlap{
-		public GameObject conflictBrick;
-		public int startIndex;
-		public int endIndex;
+		public List<string> firstChunk;
+		public List<string> secondChunk;
+		public float startOverlap;
+		public float endOverlap;
 
-		public Overlap(GameObject c, int start, int end){
-			conflictBrick = c;
-			startIndex = start;
-			endIndex = end;
-		}
-	}
-	
-	public struct Brick{
-		public GameObject brick;
-		public int ID;
-		public int startIndex;
-		public int endIndex;
-
-		public Brick(GameObject b, int i, int start, int end){
-			brick = b;
-			ID = i;
-			startIndex = start;
-			endIndex = end;
-		}
-	}
-
-	public struct Word{
-		public GameObject word;
-		public int index;
-		public GameObject brick;
-		public int group;
-
-		public Word(GameObject singleWord, int i, GameObject assignedBrick){
-			word = singleWord;
-			index = i;
-			brick = assignedBrick;
-			group = 0;
+		public Overlap(List<string> first, List<string> second, float start, float end){
+			firstChunk = first;
+			secondChunk = second;
+			startOverlap = start;
+			endOverlap = end;
 		}
 	}
 
 	//This is called when a brick has moved in or out of the construction zone.
 	void FindOverlap(){
+		overlapList = new List<Overlap> ();
+
+		//put words in order
+		//for each brick, look at the end point and look at the next brick's start point
+		for(int i = 0; i < brickList.Count-1; i++){
+			GameObject prevBrick = brickList[i];
+			GameObject nextBrick = brickList[i+1];
+
+			Vector3 temp = new Vector3((float)brickSizes[prevBrick], 0, 0);
+			Vector3 temp2 = new Vector3((float)brickSizes[nextBrick], 0, 0);
+
+			float prevBrickEnd = prevBrick.transform.position.x + (Camera.main.ScreenToViewportPoint(temp).x/2);
+			float nextBrickStart = nextBrick.transform.position.x - (Camera.main.ScreenToViewportPoint(temp2).x/2);
+
+			Debug.Log("Overlap at "+i+": ("+prevBrickEnd+", "+nextBrickStart+")");
+
+			//if next brick start point < prev brick end point, there is overlap
+			if(nextBrickStart < prevBrickEnd){
+				//get all the words between the two points (can loop through the two overlapping bricks)
+				List<string> firstList = new List<string>();
+				List<string> secondList = new List<string>();
+
+				float startOverlap = 0f;
+				float endOverlap = 0f;
+
+				float tempCandidate;
+
+				//NOTE: these need to be fixed. 
+				Debug.Log("Children of "+prevBrick.name+": ");
+				foreach (Transform child in prevBrick.transform){
+					temp = new Vector3(child.gameObject.guiText.GetScreenRect().width, 0, 0);
+					tempCandidate = child.position.x - Camera.main.ScreenToViewportPoint(temp).x/2;
+					Debug.Log (child.position.x);
+					if(child.position.x > nextBrickStart){
+						Debug.Log (child.gameObject.name);
+						if(startOverlap == 0f){
+							startOverlap = tempCandidate;
+						}
+						firstList.Add(child.gameObject.name);
+					}
+				}
+
+				Debug.Log("Children of "+nextBrick.name+": ");
+				foreach (Transform child in nextBrick.transform){
+					tempCandidate = child.position.x + (child.gameObject.guiText.GetScreenRect().width/2f);
+					Debug.Log (child.position.x);
+					if(child.position.x < prevBrickEnd){
+						Debug.Log (child.gameObject.name);
+						endOverlap = tempCandidate;
+						firstList.Add(child.gameObject.name);
+					}
+				}
+
+				//store in an object that contains overlap start point, overlap end point, first chunk, second chunk
+				Overlap newOverlap = new Overlap(firstList, secondList, startOverlap, endOverlap);
+
+				overlapList.Add(newOverlap);
+			}
+		}
+
+
 
 	}
 

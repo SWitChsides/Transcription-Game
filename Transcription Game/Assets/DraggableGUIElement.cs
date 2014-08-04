@@ -56,9 +56,6 @@ public class DraggableGUIElement : MonoBehaviour
 	
 	void OnMouseDrag()
 	{
-		//Check if cursor is actually on the GameObject. If not, don't do anything.
-		if(!isInGameObject()) return;
-
 		//delta gets the change in position.
 		Vector3 delta = GetClampedMousePosition() - lastMousePosition;
 		
@@ -142,7 +139,28 @@ public class DraggableGUIElement : MonoBehaviour
 			if(!isInList()){
 				gamesetup.brickList.Add(gameObject);
 			}
-			else Debug.Log ("Already in list!");
+			else{
+				int index = gamesetup.brickList.IndexOf(gameObject);
+				gamesetup.brickList.Remove(gameObject);
+				
+				Vector3 temp = new Vector3((float)gamesetup.brickSizes[gameObject], 0, 0);
+				Vector3 temp2 = new Vector3(0,0,0); 
+				if(index < gamesetup.brickList.Count) {
+					temp2 = new Vector3((float)gamesetup.brickSizes[gamesetup.brickList[index]], 0, 0);
+				}
+				
+				Vector3 offset = new Vector3(0,0,0);
+				offset.x = Camera.main.ScreenToViewportPoint(temp).x/2 + Camera.main.ScreenToViewportPoint(temp2).x/2 + .011f;
+				
+				//reset position of all objects after it.
+				for(int i = index; i < gamesetup.brickList.Count; i++){
+					Vector3 tempPos = gamesetup.brickList[i].transform.position;
+					tempPos -= offset;
+					gamesetup.brickList[i].transform.position = tempPos;
+				}
+
+				gamesetup.brickList.Add(gameObject);
+			}
 		}
 		else{
 			if(isInList()){
