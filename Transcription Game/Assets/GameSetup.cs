@@ -31,13 +31,14 @@ public class GameSetup : MonoBehaviour {
 
 	List<Overlap> overlapList = new List<Overlap>();
 
+	//Find the GameObject to contain all the bricks in.
+	public static GameObject fragmentBrickParent;
+
 	void makeBricks() {
 		//Clear brickSizes.
 		brickSizes = new Hashtable();
 
 		//DEBUG: Initialize our sample brick set.
-		//Find the GameObject to contain all the bricks in.
-		GameObject fragmentBrickParent = GameObject.Find("fragmentBricks");
 
 		//Vector containing the next position to place the brick. Used to stagger the bricks.
 		float nextX = 0f;
@@ -191,6 +192,7 @@ public class GameSetup : MonoBehaviour {
 			startOverlap = start;
 			endOverlap = end;
 			drawnOverlap = Instantiate(Resources.Load("placeholder", typeof(GameObject))) as GameObject;
+			drawnOverlap.transform.parent = fragmentBrickParent.transform;
 		}
 
 		public void deleteImage(){
@@ -212,8 +214,10 @@ public class GameSetup : MonoBehaviour {
 			Vector3 temp = new Vector3((float)brickSizes[prevBrick], 0, 0);
 			Vector3 temp2 = new Vector3((float)brickSizes[nextBrick], 0, 0);
 
-			float prevBrickEnd = prevBrick.transform.position.x + (Camera.main.ScreenToViewportPoint(temp).x/2);
-			float nextBrickStart = nextBrick.transform.position.x - (Camera.main.ScreenToViewportPoint(temp2).x/2);
+			//float prevBrickEnd = prevBrick.transform.position.x + (Camera.main.ScreenToViewportPoint(temp).x/2);
+			//float nextBrickStart = nextBrick.transform.position.x - (Camera.main.ScreenToViewportPoint(temp2).x/2);
+			float prevBrickEnd = prevBrick.transform.position.x + (Camera.main.ScreenToViewportPoint(temp).x);
+			float nextBrickStart = nextBrick.transform.position.x;
 
 			Debug.Log("Overlap at "+i+": ("+prevBrickEnd+", "+nextBrickStart+")");
 
@@ -232,9 +236,9 @@ public class GameSetup : MonoBehaviour {
 				Debug.Log("Children of "+prevBrick.name+": ");
 				foreach (Transform child in prevBrick.transform){
 					temp = new Vector3(child.gameObject.guiText.GetScreenRect().width, 0, 0);
-					tempCandidate = child.position.x - Camera.main.ScreenToViewportPoint(temp).x/2;
+					tempCandidate = Camera.main.ScreenToViewportPoint(temp).x;
 					Debug.Log (child.position.x);
-					if(child.position.x > nextBrickStart){
+					if(child.position.x > tempCandidate){
 						Debug.Log (child.gameObject.name);
 						if(startOverlap == 0f){
 							startOverlap = tempCandidate;
@@ -245,9 +249,9 @@ public class GameSetup : MonoBehaviour {
 
 				Debug.Log("Children of "+nextBrick.name+": ");
 				foreach (Transform child in nextBrick.transform){
-					tempCandidate = child.position.x + (child.gameObject.guiText.GetScreenRect().width/2f);
-					Debug.Log (child.position.x);
-					if(child.position.x < prevBrickEnd){
+					temp = new Vector3(child.gameObject.guiText.GetScreenRect().width, 0, 0);
+					tempCandidate = child.position.x + Camera.main.ScreenToViewportPoint(temp).x;
+					if(child.position.x < tempCandidate){
 						Debug.Log (child.gameObject.name);
 						endOverlap = tempCandidate;
 						firstList.Add(child.gameObject.name);
@@ -256,12 +260,19 @@ public class GameSetup : MonoBehaviour {
 
 				//store in an object that contains overlap start point, overlap end point, first chunk, second chunk
 				Overlap newOverlap = new Overlap(firstList, secondList, startOverlap, endOverlap);
-
 				overlapList.Add(newOverlap);
 
 				//Draw the overlap
-				Vector3 center = new Vector3((float)(prevBrickEnd + nextBrickStart)/2, -4f, 0f);
+				Debug.Log ("Prev Brick Pos: "+ prevBrick.transform.position);
+				Vector3 center = newOverlap.drawnOverlap.transform.position;
+				center.x = (prevBrickEnd + nextBrickStart)/2;
+				//center.x = prevBrickEnd;
+				center.y = 0.1f;
 				newOverlap.drawnOverlap.transform.position = center;
+				//newOverlap.drawnOverlap.transform.localScale = new Vector3(prevBrickEnd - nextBrickStart,0f,0f);
+				newOverlap.drawnOverlap.transform.localScale = new Vector3(startOverlap-endOverlap,0f,0f);
+
+				//Draw options for errors
 			}
 		}
 	}
@@ -269,6 +280,7 @@ public class GameSetup : MonoBehaviour {
 	//******************************************************END OVERLAP ALGORITHM
 
 	void Start(){
+		fragmentBrickParent = GameObject.Find("fragmentBricks");
 		brickTexture = (Texture2D)Resources.Load ("brick");
 		makeBricks();
 	}
